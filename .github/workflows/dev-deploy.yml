@@ -45,4 +45,4 @@ jobs:
             --subnet-id subnet-02c6adef05b500cc5 \
             --security-group-ids sg-0a085f30b2b8e61f9 \
             --associate-public-ip-address \
-            --user-data file://userdata.sh
+            --user-data file://ec2_userdata.sh

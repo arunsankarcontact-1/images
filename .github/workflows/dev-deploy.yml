@@ -1,0 +1,48 @@
+name: Dev Deploy EC2 with DockerHub
+
+on:
+  push:
+    branches:
+      - dev
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # 1️⃣ Login to Docker Hub
+      - name: Login to DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      # 2️⃣ Build & Push Image
+      - name: Build and Push
+        run: |
+          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/dev-nginx:latest .
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/dev-nginx:latest
+
+      # 3️⃣ Configure AWS via OIDC
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::913826031520:role/GitHubEC2DevRole
+          aws-region: us-west-2
+
+      # 4️⃣ Launch EC2
+      - name: Launch EC2
+        run: |
+          aws ec2 run-instances \
+            --image-id ami-028e63e5f8d9711da \
+            --instance-type t3.micro \
+            --subnet-id subnet-02c6adef05b500cc5 \
+            --security-group-ids sg-0a085f30b2b8e61f9 \
+            --associate-public-ip-address \
+            --user-data file://userdata.sh
